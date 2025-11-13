@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Disease Prediction & Symptom Search Engine</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            margin-bottom: 20px;
+        }
+
+        .search-section {
+            margin-bottom: 30px;
+        }
+
+        .search-label {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #667eea;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .autocomplete-dropdown.show {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .autocomplete-item:hover {
+            background: #f8f9ff;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .selected-symptoms {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .symptom-chip {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .remove-btn {
+            background: rgba(255,255,255,0.3);
+            border: none;
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            transition: background 0.2s;
+        }
+
+        .remove-btn:hover {
+            background: rgba(255,255,255,0.5);
+        }
+
+        .predict-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 20px;
+        }
+
+        .predict-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        .predict-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .results-header {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .disease-card {
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .disease-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .disease-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .disease-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .confidence-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .disease-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .matched-symptoms {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .matched-symptom {
+            background: white;
+            color: #667eea;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            border: 1px solid #667eea;
+        }
+
+        .complexity-info {
+            background: #f8f9ff;
+            border-left: 4px solid #764ba2;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .complexity-info strong {
+            color: #764ba2;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1.1rem;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Symptom Search Engine</h1>
+            <p>Symptom Analysis using Trie ,Graph and PageRank Algorithms</p>
+        </div>
+
+        <div class="card">
+            <div class="search-section">
+                <label class="search-label">Enter Your Symptoms</label>
+                <div class="search-container">
+                    <input 
+                        type="text" 
+                        id="symptomInput" 
+                        class="search-input" 
+                        placeholder="Type symptoms (e.g., fever, cough, headache)..."
+                        autocomplete="off"
+                    >
+                    <div id="autocompleteDropdown" class="autocomplete-dropdown"></div>
+                </div>
+                
+                <div id="selectedSymptoms" class="selected-symptoms"></div>
+                
+                <button id="predictBtn" class="predict-btn" disabled>
+                    Predict Diseases
+                </button>
+            </div>
+
+            
+        </div>
+
+        <div id="resultsSection" class="card results-section">
+            <h2 class="results-header">Predicted Diseases</h2>
+            <div id="resultsContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // TRIE DATA STRUCTURE IMPLEMENTATION
+        // ============================================
+        /**
+         * Trie Node for efficient prefix-based search
+         * Time Complexity: O(m) for insert/search where m = length of word
+         * Space Complexity: O(ALPHABET_SIZE * N * M) where N = number of words, M = avg length
+         */
+        class TrieNode {
+            constructor() {
+                this.children = new Map(); // Map for O(1) child access
+                this.isEndOfWord = false;
+                this.word = null;
+            }
+        }
+
+        class Trie {
+            constructor() {
+                this.root = new TrieNode();
+            }
+
+            /**
+             * Insert a word into the Trie
+             * Time Complexity: O(m) where m = length of word
+             * Space Complexity: O(m) for new nodes
+             */
+            insert(word) {
+                let node = this.root;
+                const lowerWord = word.toLowerCase();
+                
+                for (let char of lowerWord) {
+                    if (!node.children.has(char)) {
+                        node.children.set(char, new TrieNode());
+                    }
+                    node = node.children.get(char);
+                }
+                
+                node.isEndOfWord = true;
+                node.word = word;
+            }
+
+            /**
+             * Search for words with given prefix (Autocomplete)
+             * Time Complexity: O(p + n) where p = prefix length, n = number of results
+             * Space Complexity: O(n) for storing results
+             */
+            searchPrefix(prefix) {
+                let node = this.root;
+                const lowerPrefix = prefix.toLowerCase();
+                
+                // Navigate to prefix node - O(p)
+                for (let char of lowerPrefix) {
+                    if (!node.children.has(char)) {
+                        return [];
+                    }
+                    node = node.children.get(char);
+                }
+                
+                // Collect all words with this prefix - O(n)
+                const results = [];
+                this._collectWords(node, results);
+                return results;
+            }
+
+            /**
+             * DFS to collect all words from a node
+             * Time Complexity: O(n) where n = number of nodes in subtree
+             */
+            _collectWords(node, results) {
+                if (node.isEndOfWord) {
+                    results.push(node.word);
+                }
+                
+                for (let child of node.children.values()) {
+                    this._collectWords(child, results);
+                }
+            }
+        }
+
+        // ============================================
+        // GRAPH & PAGERANK IMPLEMENTATION
+        // ============================================
+        /**
+         * Graph for Disease-Symptom relationships
+         * Uses PageRank algorithm to rank diseases by importance
+         * Time Complexity: O(I * V) where I = iterations, V = vertices (diseases)
+         * Space Complexity: O(V + E) where E = edges (symptom connections)
+         */
+        class DiseaseGraph {
+            constructor() {
+                this.diseases = new Map(); // disease -> {symptoms: Set, connections: Set}
+                this.pageRankScores = new Map();
+            }
+
+            /**
+             * Add disease with symptoms
+             * Time Complexity: O(1)
+             */
+            addDisease(name, symptoms, description) {
+                this.diseases.set(name, {
+                    symptoms: new Set(symptoms.map(s => s.toLowerCase())),
+                    connections: new Set(),
+                    description: description
+                });
+            }
+
+            /**
+             * Build graph connections based on shared symptoms
+             * Time Complexity: O(D^2 * S) where D = diseases, S = symptoms per disease
+             */
+            buildConnections() {
+                const diseaseList = Array.from(this.diseases.keys());
+                
+                for (let i = 0; i < diseaseList.length; i++) {
+                    for (let j = i + 1; j < diseaseList.length; j++) {
+                        const disease1 = diseaseList[i];
+                        const disease2 = diseaseList[j];
+                        
+                        const symptoms1 = this.diseases.get(disease1).symptoms;
+                        const symptoms2 = this.diseases.get(disease2).symptoms;
+                        
+                        // Check for shared symptoms
+                        const sharedSymptoms = [...symptoms1].filter(s => symptoms2.has(s));
+                        
+                        if (sharedSymptoms.length > 0) {
+                            this.diseases.get(disease1).connections.add(disease2);
+                            this.diseases.get(disease2).connections.add(disease1);
+                        }
+                    }
+                }
+            }
+
+            /**
+             * PageRank Algorithm Implementation
+             * Ranks diseases by their importance in the symptom network
+             * Time Complexity: O(I * V) where I = iterations (default 20), V = diseases
+             * Space Complexity: O(V) for storing ranks
+             */
+            calculatePageRank(iterations = 20, dampingFactor = 0.85) {
+                const diseases = Array.from(this.diseases.keys());
+                const n = diseases.length;
+                
+                // Initialize all ranks to 1/n
+                diseases.forEach(disease => {
+                    this.pageRankScores.set(disease, 1.0 / n);
+                });
+                
+                // Iterative PageRank calculation
+                for (let iter = 0; iter < iterations; iter++) {
+                    const newRanks = new Map();
+                    
+                    for (let disease of diseases) {
+                        let rank = (1 - dampingFactor) / n;
+                        
+                        // Sum contributions from connected diseases
+                        for (let otherDisease of diseases) {
+                            const connections = this.diseases.get(otherDisease).connections;
+                            if (connections.has(disease)) {
+                                const outDegree = connections.size;
+                                rank += dampingFactor * (this.pageRankScores.get(otherDisease) / outDegree);
+                            }
+                        }
+                        
+                        newRanks.set(disease, rank);
+                    }
+                    
+                    this.pageRankScores = newRanks;
+                }
+            }
+
+            /**
+             * Predict diseases based on symptoms
+             * Time Complexity: O(D * S + D log D) where D = diseases, S = symptoms
+             * Space Complexity: O(D) for results array
+             */
+            predictDiseases(selectedSymptoms) {
+                const results = [];
+                const symptomSet = new Set(selectedSymptoms.map(s => s.toLowerCase()));
+                
+                // Calculate match score for each disease - O(D * S)
+                for (let [disease, data] of this.diseases) {
+                    const matchedSymptoms = [...symptomSet].filter(s => data.symptoms.has(s));
+                    
+                    if (matchedSymptoms.length > 0) {
+                        // Symptom match score (70% weight)
+                        const symptomScore = matchedSymptoms.length / symptomSet.size;
+                        
+                        // PageRank score (30% weight)
+                        const pageRankScore = this.pageRankScores.get(disease) || 0;
+                        
+                        // Combined confidence score
+                        const confidence = (symptomScore * 0.7) + (pageRankScore * 0.3);
+                        
+                        results.push({
+                            disease: disease,
+                            confidence: confidence,
+                            matchedSymptoms: matchedSymptoms,
+                            description: data.description
+                        });
+                    }
+                }
+                
+                // Sort by confidence - O(D log D)
+                results.sort((a, b) => b.confidence - a.confidence);
+                
+                return results;
+            }
+        }
+
+        // ============================================
+        // DISEASE DATABASE
+        // ============================================
+        const diseaseDatabase = [
+  { name: "Common Cold", symptoms: ["cough","sore throat","runny nose","sneezing"], description: "A mild viral infection of the nose and throat." },
+  { name: "Flu", symptoms: ["fever","chills","body ache","cough","fatigue"], description: "A viral infection causing fever and body aches." },
+  { name: "COVID-19", symptoms: ["fever","cough","fatigue","loss of taste","loss of smell"], description: "Respiratory illness caused by SARS-CoV-2 virus." },
+  { name: "Migraine", symptoms: ["headache","nausea","sensitivity to light","vomiting"], description: "Severe headache often accompanied by nausea and light sensitivity." },
+  { name: "Gastroenteritis", symptoms: ["diarrhea","vomiting","abdominal pain","fever"], description: "Inflammation of the stomach and intestines." },
+  { name: "Pneumonia", symptoms: ["cough","fever","chest pain","shortness of breath"], description: "Infection causing inflammation of the lungs." },
+  { name: "Asthma", symptoms: ["wheezing","shortness of breath","chest tightness","cough"], description: "Chronic lung condition causing breathing difficulties." },
+  { name: "Allergy", symptoms: ["sneezing","runny nose","itchy eyes","rash"], description: "Immune reaction to allergens like pollen or dust." },
+  { name: "Bronchitis", symptoms: ["cough","mucus","fatigue","chest discomfort"], description: "Inflammation of the bronchial tubes." },
+  { name: "Sinusitis", symptoms: ["facial pain","nasal congestion","headache","cough"], description: "Swelling of the sinuses causing congestion and pain." },
+  { name: "Strep Throat", symptoms: ["sore throat","fever","swollen glands","headache"], description: "Bacterial throat infection." },
+  { name: "UTI", symptoms: ["painful urination","frequent urination","fever"], description: "Urinary tract infection." },
+  { name: "Hypertension", symptoms: ["headache","dizziness","chest pain"], description: "High blood pressure condition." },
+  { name: "Diabetes", symptoms: ["increased thirst","frequent urination","fatigue","blurred vision"], description: "Chronic condition affecting blood sugar levels." },
+  { name: "Anxiety", symptoms: ["restlessness","rapid heartbeat","fatigue","difficulty concentrating"], description: "Mental health disorder causing excessive worry." },
+  { name: "Chickenpox", symptoms: ["itchy rash","fever","fatigue"], description: "Viral infection causing rash and fever." },
+  { name: "Malaria", symptoms: ["fever","chills","sweating","headache"], description: "Mosquito-borne parasitic infection." },
+  { name: "Dengue", symptoms: ["high fever","headache","muscle pain","rash"], description: "Viral infection transmitted by mosquitoes." },
+  { name: "Tuberculosis", symptoms: ["persistent cough","weight loss","fever","night sweats"], description: "Bacterial infection affecting the lungs." },
+  { name: "Hepatitis B", symptoms: ["fatigue","nausea","abdominal pain","jaundice"], description: "Viral liver infection." },
+  { name: "Measles", symptoms: ["fever","rash","cough","runny nose"], description: "Highly contagious viral infection." },
+  { name: "Food Poisoning", symptoms: ["nausea","vomiting","diarrhea","abdominal pain"], description: "Illness from contaminated food." },
+  { name: "Hypothyroidism", symptoms: ["fatigue","weight gain","cold intolerance","dry skin"], description: "Underactive thyroid gland." },
+  { name: "Hyperthyroidism", symptoms: ["weight loss","rapid heartbeat","nervousness","sweating"], description: "Overactive thyroid gland." },
+  { name: "Depression", symptoms: ["persistent sadness","loss of interest","fatigue","sleep problems"], description: "Mood disorder causing prolonged sadness." },
+  { name: "Ear Infection", symptoms: ["ear pain","hearing loss","fever","fluid drainage"], description: "Infection of the middle or outer ear." },
+  { name: "Conjunctivitis", symptoms: ["red eyes","itchy eyes","tearing","discharge"], description: "Inflammation of the eye’s conjunctiva." },
+  { name: "Tonsillitis", symptoms: ["sore throat","fever","difficulty swallowing","swollen tonsils"], description: "Inflammation of the tonsils." },
+  { name: "Chickenpox", symptoms: ["rash","fever","fatigue"], description: "Viral infection causing itchy blisters." },
+  { name: "Cough", symptoms: ["dry cough","productive cough","sore throat"], description: "Symptom caused by infection or irritation in airways." },
+  { name: "Cold Sores", symptoms: ["blisters","tingling","itching","pain"], description: "Herpes simplex virus infection around lips." },
+  { name: "Shingles", symptoms: ["painful rash","blisters","itching","burning sensation"], description: "Reactivation of the chickenpox virus." },
+  { name: "Laryngitis", symptoms: ["hoarseness","loss of voice","sore throat","cough"], description: "Inflammation of the voice box." },
+  { name: "Eczema", symptoms: ["itchy skin","redness","dry patches"], description: "Chronic skin condition causing inflammation." },
+  { name: "Psoriasis", symptoms: ["red patches","scaly skin","itching"], description: "Autoimmune skin disorder causing thick skin patches." },
+  { name: "Acne", symptoms: ["pimples","blackheads","whiteheads","redness"], description: "Skin condition causing clogged pores and pimples." },
+  { name: "Arthritis", symptoms: ["joint pain","stiffness","swelling"], description: "Inflammation of joints causing pain and stiffness." },
+  { name: "Osteoporosis", symptoms: ["weak bones","fractures","loss of height"], description: "Condition causing bones to become weak and brittle." },
+  { name: "Back Pain", symptoms: ["lower back pain","stiffness","muscle ache"], description: "Pain in the back muscles or spine." },
+  { name: "Obesity", symptoms: ["weight gain","fatigue","shortness of breath"], description: "Excess body fat affecting health." },
+  { name: "Anemia", symptoms: ["fatigue","pale skin","shortness of breath","dizziness"], description: "Low red blood cell count causing weakness." },
+  { name: "Vitamin D Deficiency", symptoms: ["bone pain","muscle weakness","fatigue"], description: "Lack of vitamin D affecting bone health." },
+  { name: "Vitamin B12 Deficiency", symptoms: ["fatigue","numbness","weakness","memory problems"], description: "Lack of vitamin B12 causing nerve issues." },
+  { name: "Iron Deficiency", symptoms: ["fatigue","pale skin","shortness of breath"], description: "Low iron levels affecting red blood cells." },
+  { name: "Heat Stroke", symptoms: ["high body temperature","dizziness","confusion","nausea"], description: "Serious heat-related illness." },
+  { name: "Hypothermia", symptoms: ["shivering","confusion","slurred speech","weak pulse"], description: "Dangerously low body temperature." },
+  { name: "Chickenpox", symptoms: ["rash","fever","fatigue"], description: "Viral infection causing itchy blisters." },
+  { name: "Whooping Cough", symptoms: ["severe cough","runny nose","fever","vomiting"], description: "Highly contagious bacterial infection of the respiratory tract." },
+  { name: "Polio", symptoms: ["fever","fatigue","muscle weakness","paralysis"], description: "Viral infection affecting the nervous system." },
+  { name: "Mumps", symptoms: ["swollen salivary glands","fever","headache","muscle aches"], description: "Viral infection affecting salivary glands." },
+  { name: "Rubella", symptoms: ["rash","fever","swollen lymph nodes"], description: "Viral infection causing mild rash and fever." },
+  { name: "Scarlet Fever", symptoms: ["red rash","fever","sore throat"], description: "Bacterial infection causing rash and sore throat." },
+  { name: "Whooping Cough", symptoms: ["severe cough","runny nose","fever"], description: "Contagious respiratory bacterial infection." }
+];
+
+        // ============================================
+        // INITIALIZE SYSTEM
+        // ============================================
+        const trie = new Trie();
+        const graph = new DiseaseGraph();
+        const allSymptoms = new Set();
+        const selectedSymptoms = new Set();
+
+        // Build Trie and Graph
+        diseaseDatabase.forEach(disease => {
+            graph.addDisease(disease.name, disease.symptoms, disease.description);
+            disease.symptoms.forEach(symptom => {
+                allSymptoms.add(symptom);
+                trie.insert(symptom);
+            });
+        });
+
+        // Build graph connections and calculate PageRank
+        graph.buildConnections();
+        graph.calculatePageRank();
+
+        // ============================================
+        // UI INTERACTION HANDLERS
+        // ============================================
+        const symptomInput = document.getElementById('symptomInput');
+        const autocompleteDropdown = document.getElementById('autocompleteDropdown');
+        const selectedSymptomsDiv = document.getElementById('selectedSymptoms');
+        const predictBtn = document.getElementById('predictBtn');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContainer = document.getElementById('resultsContainer');
+
+        // Autocomplete functionality
+        symptomInput.addEventListener('input', (e) => {
+            const query = e.target.value.trim();
+            
+            if (query.length < 2) {
+                autocompleteDropdown.classList.remove('show');
+                return;
+            }
+
+            // Use Trie for autocomplete - O(p + n)
+            const suggestions = trie.searchPrefix(query)
+                .filter(symptom => !selectedSymptoms.has(symptom))
+                .slice(0, 8);
+
+            if (suggestions.length > 0) {
+                autocompleteDropdown.innerHTML = suggestions
+                    .map(symptom => `<div class="autocomplete-item" data-symptom="${symptom}">${symptom}</div>`)
+                    .join('');
+                autocompleteDropdown.classList.add('show');
+            } else {
+                autocompleteDropdown.classList.remove('show');
+            }
+        });
+
+        // Handle autocomplete selection
+        autocompleteDropdown.addEventListener('click', (e) => {
+            if (e.target.classList.contains('autocomplete-item')) {
+                const symptom = e.target.dataset.symptom;
+                addSymptom(symptom);
+                symptomInput.value = '';
+                autocompleteDropdown.classList.remove('show');
+            }
+        });
+
+        // Add symptom chip
+        function addSymptom(symptom) {
+            if (selectedSymptoms.has(symptom)) return;
+            
+            selectedSymptoms.add(symptom);
+            updateSelectedSymptoms();
+            updatePredictButton();
+        }
+
+        // Remove symptom chip
+        function removeSymptom(symptom) {
+            selectedSymptoms.delete(symptom);
+            updateSelectedSymptoms();
+            updatePredictButton();
+        }
+
+        // Update selected symptoms display
+        function updateSelectedSymptoms() {
+            if (selectedSymptoms.size === 0) {
+                selectedSymptomsDiv.innerHTML = '';
+                return;
+            }
+
+            selectedSymptomsDiv.innerHTML = Array.from(selectedSymptoms)
+                .map(symptom => `
+                    <div class="symptom-chip">
+                        ${symptom}
+                        <button class="remove-btn" onclick="removeSymptom('${symptom}')">×</button>
+                    </div>
+                `).join('');
+        }
+
+        // Update predict button state
+        function updatePredictButton() {
+            predictBtn.disabled = selectedSymptoms.size === 0;
+        }
+
+        // Predict diseases
+        predictBtn.addEventListener('click', () => {
+            if (selectedSymptoms.size === 0) return;
+
+            // Use Graph with PageRank to predict diseases
+            const predictions = graph.predictDiseases(Array.from(selectedSymptoms));
+
+            if (predictions.length === 0) {
+                resultsContainer.innerHTML = '<div class="no-results">No matching diseases found. Try different symptoms.</div>';
+            } else {
+                resultsContainer.innerHTML = predictions.map((pred, index) => `
+                    <div class="disease-card">
+                        <div class="disease-header">
+                            <div class="disease-name">${index + 1}. ${pred.disease}</div>
+                            <div class="confidence-badge">${(pred.confidence * 100).toFixed(1)}% Match</div>
+                        </div>
+                        <div class="disease-description">${pred.description}</div>
+                        <div class="matched-symptoms">
+                            ${pred.matchedSymptoms.map(s => `<span class="matched-symptom">${s}</span>`).join('')}
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            resultsSection.classList.add('show');
+            resultsSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+
+        // Close autocomplete when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!symptomInput.contains(e.target) && !autocompleteDropdown.contains(e.target)) {
+                autocompleteDropdown.classList.remove('show');
+            }
+        });
+
+        // Make removeSymptom globally accessible
+        window.removeSymptom = removeSymptom;
+    </script>
+</body>
+</html>
