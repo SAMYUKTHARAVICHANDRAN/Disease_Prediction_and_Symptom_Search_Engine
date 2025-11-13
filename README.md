@@ -1,4 +1,4 @@
-#Disease Prediction and Symptom Search Engine
+# Disease Prediction and Symptom Search Engine
 
 A DSA-based Java project that predicts possible diseases from user-provided symptoms. It applies efficient data structures and algorithms to deliver real-time autocomplete, analyze disease connections, and rank predictions using a hybrid confidence model.
 
