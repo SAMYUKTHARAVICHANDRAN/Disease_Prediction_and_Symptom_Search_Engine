@@ -1,18 +1,18 @@
-Disease Prediction and Symptom Search Engine
+#Disease Prediction and Symptom Search Engine
 
 A DSA-based Java project that predicts possible diseases from user-provided symptoms. It applies efficient data structures and algorithms to deliver real-time autocomplete, analyze disease connections, and rank predictions using a hybrid confidence model.
 
 Key Features
 
-Trie: Enables fast and accurate symptom autocomplete
+1.Trie: Enables fast and accurate symptom autocomplete
 
-Weighted Graph: Models disease interconnections through shared symptoms
+2.Weighted Graph: Models disease interconnections through shared symptoms
 
-PageRank Algorithm: Determines disease importance within the network
+3.PageRank Algorithm: Determines disease importance within the network
 
-Hybrid Scoring System: Combines symptom score and PageRank score
+4.Hybrid Scoring System: Combines symptom score and PageRank score
 
-TimSort: Efficiently ranks predictions by confidence
+5.TimSort: Efficiently ranks predictions by confidence
 
 Technologies & Concepts
 
